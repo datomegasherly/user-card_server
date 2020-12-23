@@ -6,10 +6,11 @@ const db = DB({dbName: 'usercard', collections: ['userlist']});
 
 const Joi = require('joi');
 const schema = Joi.object({
+    id: Joi.number().optional().allow('', null).greater(-1).max(10).required(),
     username: Joi.string().min(3).max(40).pattern(new RegExp('^[a-zA-Z0-9]{3,40}$')).required(),
     name: Joi.string().min(3).max(40).pattern(new RegExp('^[a-zA-Z ]{3,40}$')).required(),
-    phone: Joi.string().min(5).max(45).pattern(new RegExp('^[0-9+\-]{5,45}$')),
-    website: Joi.string().min(5).max(60).pattern(new RegExp('^(http:\\|https:\\|)(www.|)[a-zA-Z0-9\-_\.]{5,40}\.[a-zA-Z]{2,5}$')),
+    phone: Joi.string().optional().allow('', null).min(3).max(45).pattern(new RegExp('^[0-9+\-]{5,45}$')),
+    website: Joi.string().optional().allow('', null).min(5).max(60).pattern(new RegExp('^(http:\\|https:\\|)(www.|)[a-zA-Z0-9\-_\.]{5,40}\.[a-zA-Z]{2,5}$')),
     email: Joi.string().min(5).max(60).pattern(new RegExp('^[a-zA-Z0-9\-_\.]{2,40}@[a-zA-Z0-9\-_\.]{2,40}\.[a-zA-Z]{2,5}$')).required(),
     address: Joi.object({
        city: Joi.string().min(3).max(60).pattern(new RegExp('^[a-zA-Z ]{3,60}$')).required(),
@@ -26,11 +27,27 @@ router.get('/', (req, res) => {
     });
 });
 
+const createData = (userData, res) => {
+    db.getData('userlist', {query: {username: userData.username}});
+    db.response((data) => {
+        if(!data.length){
+            db.createData('userlist', userData);
+            db.response((data) => {
+                res.send({data, success: true});
+            });
+        } else {
+            res.send({error: 'User exist'});
+        }
+    });
+}
+
 router.post('/', (req, res) => {
     let userData = req.body;
     const { error, value } = schema.validate(userData);
     if(error){
         res.send({error: error.details[0].message});
+    } else {
+        createData(userData, res);
     }
 });
 
