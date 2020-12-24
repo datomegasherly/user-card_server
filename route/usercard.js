@@ -6,6 +6,7 @@ const db = DB({dbName: 'usercard', collections: ['userlist']});
 
 const Joi = require('joi');
 const schema = Joi.object({
+    _id: Joi.string().optional().allow('', null),
     id: Joi.number().optional().allow('', null).greater(-1).max(10).required(),
     username: Joi.string().min(3).max(40).pattern(new RegExp('^[a-zA-Z0-9]{3,40}$')).required(),
     name: Joi.string().min(3).max(40).pattern(new RegExp('^[a-zA-Z ]{3,40}$')).required(),
@@ -48,6 +49,33 @@ router.post('/', (req, res) => {
         res.send({error: error.details[0].message});
     } else {
         createData(userData, res);
+    }
+});
+
+const editData = (userData, res) => {
+    let query = {query: {_id: userData._id}};
+    db.getData('userlist', query);
+    db.response((data) => {
+        if(data.length){
+            delete(userData._id);
+            delete(userData.id);
+            db.updateData('userlist', userData, query);
+            db.response((data) => {
+                res.send({data, success: true});
+            });
+        } else {
+            res.send({error: 'User is not exist'});
+        }
+    });
+}
+
+router.put('/', (req, res) => {
+    let userData = req.body;
+    const { error, value } = schema.validate(userData);
+    if(error){
+        res.send({error: error.details[0].message});
+    } else {
+        editData(userData, res);
     }
 });
 
