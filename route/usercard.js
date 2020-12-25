@@ -69,13 +69,39 @@ const editData = (userData, res) => {
     });
 }
 
-router.put('/', (req, res) => {
+router.put('/:id', (req, res) => {
     let userData = req.body;
+    let id = req.params.id;
+    userData._id = id;
     const { error, value } = schema.validate(userData);
     if(error){
         res.send({error: error.details[0].message});
     } else {
         editData(userData, res);
+    }
+});
+
+const deleteData = (id, res) => {
+    let query = {query: {_id: id}};
+    db.getData('userlist', query);
+    db.response((data) => {
+        if(data.length){
+            db.deleteData('userlist', query);
+            db.response((data) => {
+                res.send({data, success: true});
+            });
+        } else {
+            res.send({error: 'Id is not exist'});
+        }
+    });
+}
+
+router.delete('/:id', (req, res) => {
+    let id = req.params.id;
+    if(!id){
+        res.send({error: 'Id is not exist'});
+    } else {
+        deleteData(id, res);
     }
 });
 
